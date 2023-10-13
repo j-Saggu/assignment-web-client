@@ -18,6 +18,8 @@
 # Write your own HTTP GET and POST
 # The point is to understand what you have to send and get experience with it
 
+# used Lab2 client.py code, used slides.xt HTTP and more HTTP slides
+
 import sys
 import socket
 import re
@@ -39,7 +41,9 @@ class HTTPClient(object):
         return None
 
     def get_code(self, data):
+        # first line in recieved header
         first_line = data.split("\n", 1)[0]
+        # get the error code from the first line
         code = first_line.split(" ")[1]
         return int(code)        
 
@@ -47,21 +51,27 @@ class HTTPClient(object):
         return None
 
     def get_body(self, data):
+        # get the individual lines of the recieved data
         lines = data.split("\r\n")
+        # i will be the location of the line break bw the headers and the body
         i = 0
         for line in lines:
             # print(line)
             i+=1
             if line == "":
                 break
+        # body contains all the lines after the line break (i) joined together
         body = ''.join(lines[i:])
         return body
     
     def get_host_port_path(self, url):
+        # no, I did not know you can use urllib.parse...
+        
+        # split the url by '/'s and get the host and the port
         temp = url.split('/')
         host_port = temp[2]
-        
-      
+
+        # if there is a ':', then its a local host link
         if ":" in host_port:
             path = ''
             for i in range(3, len(temp)):
@@ -69,10 +79,12 @@ class HTTPClient(object):
             temp = host_port.split(':')
             host = temp[0]
             port = temp[1]
+        # actual internet website
         else:
-            print(host_port)
+            # print(host_port)
             path = "/"
             host = host_port
+            # specify port to be 80
             port = '80'
             
         return host, int(port), path
