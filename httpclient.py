@@ -60,19 +60,21 @@ class HTTPClient(object):
     def get_host_port_path(self, url):
         temp = url.split('/')
         host_port = temp[2]
-        path = ''
         
-        for i in range(3, len(temp)):
-            path += "/" + temp[i]
-        
+      
         if ":" in host_port:
+            path = ''
+            for i in range(3, len(temp)):
+                path += "/" + temp[i]
             temp = host_port.split(':')
             host = temp[0]
             port = temp[1]
         else:
             print(host_port)
-        
-        
+            path = "/"
+            host = host_port
+            port = '80'
+            
         return host, int(port), path
     
     def sendall(self, data):
@@ -98,16 +100,16 @@ class HTTPClient(object):
         body = ""
         
         # print("------------------------------URL IS: ", url)
-        host, port_r, path = self.get_host_port_path(url)
-        port_s = 80
-        # print(f"--Host: {host} --Port: {port_r} --Path: {path}")
+        host, port, path = self.get_host_port_path(url)
+        print(f"--Host: {host} --Port: {port} --Path: {path}")
         
         # took from lab2 code
-        data = f'GET {path} HTTP/1.1\r\nHost: {host}:{port_s}\r\nConnection: close\r\n\r\n'
+        data = f'GET {path} HTTP/1.1\r\nHost: {host}:{port}\r\nConnection: close\r\n\r\n'
+        # print(data)
         
         try:
             print("connecting...")
-            self.connect(host, port_r)
+            self.connect(host, port)
             print("connection success!")
         
             print("sending...")
@@ -122,8 +124,8 @@ class HTTPClient(object):
             
             code = self.get_code(recv_data)
             body = self.get_body(recv_data)
-            print("code, body:  ")
-            print(code, body)
+            # print("code, body:  ")
+            # print(code, body)
             
         except:
             code = 404
@@ -131,18 +133,17 @@ class HTTPClient(object):
         finally:
             print("closing...")
             self.close()
-            print("connection closed")
+            print("connection closed\n---------------------------------------------\n")
         
         return HTTPResponse(code, body)
 
     def POST(self, url, args=None):
-        code = 500
+        code = 200
         body = ""
         
-        print("------------------------------URL IS: ", url)
-        host, port_r, path = self.get_host_port_path(url)
-        port_s = 80
-        print(f"--Host: {host} --Port: {port_s} --Path: {path}")
+        # print("------------------------------URL IS: ", url)
+        host, port, path = self.get_host_port_path(url)
+        print(f"--Host: {host} --Port: {port} --Path: {path}")
         
         if args == None:
             content_length = 0
@@ -152,18 +153,17 @@ class HTTPClient(object):
             content = urllib.parse.urlencode(args)
         
         # took from lab2 code
-        data = f'POST {path} HTTP/1.1\r\nHost: {host}:{port_s}\r\ncontent-type: application/x-www-form-urlencoded\r\nContent-length: {content_length}\r\nConnection: close\r\n\r\n{content}'
+        data = f'POST {path} HTTP/1.1\r\nHost: {host}:{port}\r\ncontent-type: application/x-www-form-urlencoded\r\nContent-length: {content_length}\r\nConnection: close\r\n\r\n{content}'
         
         try:
             print("connecting...")
-            self.connect(host, port_r)
+            self.connect(host, port)
             print("connection success!")
         
             print("sending...")
             self.sendall(data)
             print("success")
             
-            # if content_length > 0:
             print("reading...")
             recv_data = self.recvall(self.socket)
             print("finished reading")
@@ -172,8 +172,8 @@ class HTTPClient(object):
         
             code = self.get_code(recv_data)
             body = self.get_body(recv_data)
-            print("code, body:  ")
-            print(code, body)
+            # print("code, body:  ")
+            # print(code, body)
             
         except:
             code = 404
@@ -181,7 +181,7 @@ class HTTPClient(object):
         finally:
             print("closing...")
             self.close()
-            print("connection closed")
+            print("connection closed\n---------------------------------------------\n")
         
         return HTTPResponse(code, body)
 
