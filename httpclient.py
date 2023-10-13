@@ -33,21 +33,47 @@ class HTTPResponse(object):
         self.body = body
 
 class HTTPClient(object):
-    #def get_host_port(self,url):
-
     def connect(self, host, port):
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.connect((host, port))
         return None
 
     def get_code(self, data):
-        return None
+        first_line = data.split("\n", 1)[0]
+        code = first_line.split(" ")[1]
+        return int(code)        
 
     def get_headers(self,data):
         return None
 
     def get_body(self, data):
-        return None
+        lines = data.split("\r\n")
+        i = 0
+        for line in lines:
+            # print(line)
+            i+=1
+            if line == "":
+                break
+        body = ''.join(lines[i:])
+        return body
+    
+    def get_host_port_path(self, url):
+        temp = url.split('/')
+        host_port = temp[2]
+        path = ''
+        
+        for i in range(3, len(temp)):
+            path += "/" + temp[i]
+        
+        if ":" in host_port:
+            temp = host_port.split(':')
+            host = temp[0]
+            port = temp[1]
+        else:
+            print(host_port)
+        
+        
+        return host, int(port), path
     
     def sendall(self, data):
         self.socket.sendall(data.encode('utf-8'))
@@ -70,12 +96,95 @@ class HTTPClient(object):
     def GET(self, url, args=None):
         code = 500
         body = ""
+        
+        # print("------------------------------URL IS: ", url)
+        host, port_r, path = self.get_host_port_path(url)
+        port_s = 80
+        # print(f"--Host: {host} --Port: {port_r} --Path: {path}")
+        
+        # took from lab2 code
+        data = f'GET {path} HTTP/1.1\r\nHost: {host}:{port_s}\r\nConnection: close\r\n\r\n'
+        
+        try:
+            print("connecting...")
+            self.connect(host, port_r)
+            print("connection success!")
+        
+            print("sending...")
+            self.sendall(data)
+            print("success")
+            
+            print("reading...")
+            recv_data = self.recvall(self.socket)
+            print("finished reading")
+            
+            # print(recv_data)
+            
+            code = self.get_code(recv_data)
+            body = self.get_body(recv_data)
+            print("code, body:  ")
+            print(code, body)
+            
+        except:
+            code = 404
+            print("fail")
+        finally:
+            print("closing...")
+            self.close()
+            print("connection closed")
+        
         return HTTPResponse(code, body)
 
     def POST(self, url, args=None):
         code = 500
         body = ""
+        
+        print("------------------------------URL IS: ", url)
+        host, port_r, path = self.get_host_port_path(url)
+        port_s = 80
+        print(f"--Host: {host} --Port: {port_s} --Path: {path}")
+        
+        if args == None:
+            content_length = 0
+            content = ''
+        else:
+            content_length = len(urllib.parse.urlencode(args))
+            content = urllib.parse.urlencode(args)
+        
+        # took from lab2 code
+        data = f'POST {path} HTTP/1.1\r\nHost: {host}:{port_s}\r\ncontent-type: application/x-www-form-urlencoded\r\nContent-length: {content_length}\r\nConnection: close\r\n\r\n{content}'
+        
+        try:
+            print("connecting...")
+            self.connect(host, port_r)
+            print("connection success!")
+        
+            print("sending...")
+            self.sendall(data)
+            print("success")
+            
+            # if content_length > 0:
+            print("reading...")
+            recv_data = self.recvall(self.socket)
+            print("finished reading")
+            
+            # print(recv_data)
+        
+            code = self.get_code(recv_data)
+            body = self.get_body(recv_data)
+            print("code, body:  ")
+            print(code, body)
+            
+        except:
+            code = 404
+            print("fail")
+        finally:
+            print("closing...")
+            self.close()
+            print("connection closed")
+        
         return HTTPResponse(code, body)
+
 
     def command(self, url, command="GET", args=None):
         if (command == "POST"):
